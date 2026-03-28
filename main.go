@@ -62,8 +62,9 @@ func main() {
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/callback", callbackHandler)
+	http.HandleFunc("/logout", logoutHandler)
 
-	log.Printf("🚀 App running at http://localhost%s\n", cfg.ListenAddr)
+	log.Printf("App running at http://localhost%s\n", cfg.ListenAddr)
 	log.Fatal(http.ListenAndServe(cfg.ListenAddr, nil))
 }
 
@@ -87,6 +88,7 @@ func loadConfig() {
 // ===============================
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(`<h2>OIDC Test App</h2><a href="/login">Login with OIDC</a>`))
 }
 
@@ -143,14 +145,29 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	decoded := decodeJWT(rawIDToken)
 
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(fmt.Sprintf(`
 <h2>Login successful</h2>
+<form action="/logout" method="get">
+  <button type="submit">Logout</button>
+</form>
 <h3>Claims</h3>
 <pre>%s</pre>
 <h3>Decoded JWT</h3>
 <pre>%s</pre>
 `, pretty, decoded)))
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	var metadata struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	if err := provider.Claims(&metadata); err == nil && metadata.EndSessionEndpoint != "" {
+		http.Redirect(w, r, metadata.EndSessionEndpoint, http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // ===============================

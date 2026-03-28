@@ -1,2 +1,4 @@
+oidc-tester
 config.json
 dist/
+.DS_Store

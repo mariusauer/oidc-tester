@@ -151,6 +151,9 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 <form action="/logout" method="get">
   <button type="submit">Logout</button>
 </form>
+<form action="/login" method="get">
+  <button type="submit">Refresh</button>
+</form>
 <h3>Claims</h3>
 <pre>%s</pre>
 <h3>Decoded JWT</h3>

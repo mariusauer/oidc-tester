@@ -1,4 +1,5 @@
 oidc-tester
+.antigravitycli/
 config.json
 dist/
 .DS_Store

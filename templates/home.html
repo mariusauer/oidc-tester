@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIDC Integration Portal</title>
+  <meta name="description"
+    content="A premium utility portal for testing OpenID Connect authentication flow, viewing claims, and verifying JSON Web Tokens (JWT).">
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* Premium Modern CSS Variables */
+    :root {
+      --bg-dark: #08090c;
+      --card-bg: rgba(13, 17, 28, 0.45);
+      --card-border: rgba(255, 255, 255, 0.07);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #4f46e5;
+      --primary-hover: #6366f1;
+      --primary-glow: rgba(79, 70, 229, 0.4);
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+      --accent-emerald: #10b981;
+      --mono-font: 'JetBrains Mono', monospace;
+      --sans-font: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--sans-font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Vibrant Mesh Gradient Orbs */
+    .bg-glow-1 {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(79, 70, 229, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .bg-glow-2 {
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 50vw;
+      height: 50vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 620px;
+      padding: 24px;
+    }
+
+    /* Glassmorphic Main Card */
+    .portal-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Glowing Top Edge */
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), var(--accent-cyan), transparent);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 20px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+
+    .logo-icon {
+      color: var(--accent-cyan);
+      width: 32px;
+      height: 32px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    /* Modern Configuration Screen */
+    .config-panel {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .config-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .config-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--accent-emerald);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+      }
+
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+      }
+
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .config-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .config-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .config-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .config-val {
+      font-family: var(--mono-font);
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      word-break: break-all;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .config-scopes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .scope-tag {
+      font-family: var(--mono-font);
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    /* Premium Dynamic Action Button */
+    .btn-login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      padding: 16px;
+      font-family: var(--sans-font);
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 20px var(--primary-glow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-login:hover {
+      background: linear-gradient(135deg, var(--primary-hover) 0%, #60a5fa 100%);
+      box-shadow: 0 6px 25px var(--primary-glow);
+      transform: translateY(-2px);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    /* Subtle shimmer shine on button */
+    .btn-login::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg,
+          rgba(255, 255, 255, 0) 25%,
+          rgba(255, 255, 255, 0.15) 50%,
+          rgba(255, 255, 255, 0) 75%);
+      transform: rotate(45deg);
+      transition: none;
+      opacity: 0;
+    }
+
+    .btn-login:hover::after {
+      animation: shine 1.6s ease-in-out infinite;
+      opacity: 1;
+    }
+
+    @keyframes shine {
+      0% {
+        left: -100%;
+      }
+
+      100% {
+        left: 100%;
+      }
+    }
+
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <main>
+    <div class="portal-card" id="login-portal-card">
+      <div class="header">
+        <div class="logo-container">
+          <svg class="logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+            </path>
+          </svg>
+        </div>
+        <h1 id="app-title">OIDC Integration</h1>
+        <p class="subtitle" id="app-subtitle">Secure authorization testing workbench. Discover parameters and test
+          workflows seamlessly.</p>
+      </div>
+
+      <!-- Config Preview Box -->
+      <div class="config-panel" id="config-panel">
+        <div class="config-header">
+          <div class="config-title">
+            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+              </path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            Active Environment
+          </div>
+          <div class="status-badge" id="env-status-badge">
+            <span class="status-dot"></span> Online
+          </div>
+        </div>
+
+        <div class="config-list">
+          <div class="config-item">
+            <span class="config-label">Discovery Issuer</span>
+            <span class="config-val" id="issuer-val">{{.IssuerURL}}</span>
+          </div>
+
+          <div class="config-item">
+            <span class="config-label">Client Identifier</span>
+            <span class="config-val" id="client-id-val">{{.ClientID}}</span>
+          </div>
+
+          <div class="config-item">
+            <span class="config-label">Redirect URL</span>
+            <span class="config-val" id="redirect-val">{{.RedirectURL}}</span>
+          </div>
+
+          <div class="config-item">
+            <span class="config-label">Authorized Scopes</span>
+            <div class="config-scopes" id="scopes-list">
+              {{range .Scopes}}
+              <span class="scope-tag">{{.}}</span>
+              {{end}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Primary Button -->
+      <a href="/login" class="btn-login" id="oidc-login-btn">
+        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+        </svg>
+        <span>Connect via OIDC</span>
+      </a>
+    </div>
+
+    <div class="footer">
+      Active port: {{.ListenAddr}}
+    </div>
+  </main>
+</body>
+
+</html>

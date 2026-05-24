@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIDC Claims Dashboard</title>
+  <meta name="description" content="Secure session explorer, claim inspector, and JWT visual verification console.">
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #08090c;
+      --card-bg: rgba(13, 17, 28, 0.45);
+      --card-border: rgba(255, 255, 255, 0.07);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      
+      --primary: #4f46e5;
+      --primary-hover: #6366f1;
+      --primary-glow: rgba(79, 70, 229, 0.3);
+      
+      --accent-magenta: #f43f5e;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+
+      --mono-font: 'JetBrains Mono', monospace;
+      --sans-font: 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--sans-font);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 40px 20px;
+      position: relative;
+    }
+
+    /* Ambient Mesh Orbs */
+    .bg-glow-top {
+      position: absolute;
+      top: -15%;
+      left: 20%;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .bg-glow-bottom {
+      position: absolute;
+      bottom: -15%;
+      right: 15%;
+      width: 50vw;
+      height: 50vw;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .dashboard-container {
+      position: relative;
+      z-index: 10;
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Top Navigation bar */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 10px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: rgba(79, 70, 229, 0.15);
+      border: 1px solid rgba(79, 70, 229, 0.3);
+      border-radius: 10px;
+      color: var(--accent-cyan);
+    }
+
+    .nav-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #fff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Dashboard Layout Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.4);
+      padding: 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Sidebar Profile Card */
+    .profile-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 20px;
+      height: fit-content;
+    }
+
+    .profile-avatar-container {
+      position: relative;
+      display: inline-flex;
+      margin-top: 10px;
+    }
+
+    .profile-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent-cyan) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: white;
+      border: 4px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25);
+    }
+
+    .profile-avatar-img {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25);
+    }
+
+    .verified-badge {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      background: var(--accent-emerald);
+      color: #08090c;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #0d111c;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .profile-info {
+      width: 100%;
+    }
+
+    .profile-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .profile-email {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    /* Live Session Info List */
+    .session-details {
+      width: 100%;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .session-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .session-value {
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .session-value.expiry {
+      color: var(--accent-amber);
+      font-family: var(--mono-font);
+      background: rgba(245, 158, 11, 0.15);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    /* Profile Action Buttons */
+    .profile-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-family: var(--sans-font);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      width: 100%;
+    }
+
+    .btn-logout {
+      background: rgba(244, 63, 94, 0.1);
+      color: var(--accent-magenta);
+      border-color: rgba(244, 63, 94, 0.2);
+    }
+
+    .btn-logout:hover {
+      background: var(--accent-magenta);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+    }
+
+    .btn-refresh {
+      background: rgba(79, 70, 229, 0.15);
+      color: #a5b4fc;
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-refresh:hover {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--primary-glow);
+    }
+
+    .btn-home {
+      background: rgba(255, 255, 255, 0.03);
+      color: #e2e8f0;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-home:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    /* Main Console Area */
+    .console-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Stylish Tabs Control */
+    .tab-nav {
+      display: flex;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 4px;
+      border-radius: 14px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--sans-font);
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tab 1: Claims Tree Styles */
+    .panel-header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px 16px 10px 38px;
+      border-radius: 10px;
+      font-family: var(--sans-font);
+      color: #fff;
+      font-size: 0.88rem;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      width: 16px;
+      height: 16px;
+      pointer-events: none;
+    }
+
+    .action-badge-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      color: #e2e8f0;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .action-badge-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .code-container {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 14px;
+      padding: 20px;
+      overflow-x: auto;
+      max-height: 520px;
+      font-family: var(--mono-font);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    /* JSON Syntax Highlighting */
+    .json-key { color: var(--accent-cyan); font-weight: 600; }
+    .json-string { color: var(--accent-emerald); }
+    .json-number { color: var(--accent-amber); }
+    .json-boolean { color: var(--accent-magenta); font-weight: 600; }
+    .json-null { color: var(--text-muted); }
+    .json-highlight {
+      background-color: rgba(79, 70, 229, 0.35);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    /* Tab 2: JWT Breakdown Section */
+    .jwt-part-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .jwt-part-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+
+    .jwt-header-border { border-left: 4px solid var(--accent-magenta); }
+    .jwt-payload-border { border-left: 4px solid var(--accent-cyan); }
+    .jwt-signature-border { border-left: 4px solid var(--accent-emerald); }
+
+    .jwt-panel-header {
+      color: var(--accent-magenta);
+    }
+    .jwt-panel-payload {
+      color: var(--accent-cyan);
+    }
+    .jwt-panel-signature {
+      color: var(--accent-emerald);
+    }
+
+    .jwt-parsed-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .jwt-parsed-box {
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      font-family: var(--mono-font);
+      font-size: 0.82rem;
+      overflow-x: auto;
+      max-height: 250px;
+    }
+
+    /* Tab 3: Raw Token container */
+    .raw-token-box {
+      font-family: var(--mono-font);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      word-break: break-all;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 14px;
+      padding: 20px;
+      user-select: all;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      position: relative;
+    }
+
+    /* Diagnostic grid */
+    .diagnostic-panel {
+      margin-top: 10px;
+    }
+
+    .diagnostic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .diagnostic-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .diag-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .diag-val {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+
+    /* Elegant Custom Toast Alert */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(16, 185, 129, 0.95);
+      color: #08090c;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+      transform: translateY(100px) scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow-top"></div>
+  <div class="bg-glow-bottom"></div>
+
+  <div class="dashboard-container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+      <a href="/" class="nav-brand" id="nav-home-link">
+        <div class="nav-logo">
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+        </div>
+        <span class="nav-title">OIDC Tester Workspace</span>
+      </a>
+      <div class="status-badge" style="background: rgba(16, 185, 129, 0.12);" id="active-session-badge">
+        <span class="status-dot"></span> Authorized Session
+      </div>
+    </header>
+
+    <!-- Content Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- Left Column: User Card -->
+      <aside class="glass-card profile-card" id="user-profile-aside">
+        <div class="profile-avatar-container">
+          <div class="profile-avatar" id="avatar-initials">--</div>
+          <img class="profile-avatar-img" id="avatar-image" style="display:none;" alt="User Picture" />
+          <div class="verified-badge" title="Identity Verified">
+            <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="profile-info">
+          <h2 class="profile-name" id="user-fullname">Loading...</h2>
+          <div class="profile-email" id="user-email">loading-identity@claims.local</div>
+        </div>
+
+        <!-- Live Expiration Timer -->
+        <div class="session-details">
+          <div class="session-item">
+            <span class="session-label">Provider Status</span>
+            <span class="session-value" style="color: var(--accent-emerald);">Connected</span>
+          </div>
+          <div class="session-item">
+            <span class="session-label">Session Lifetime</span>
+            <span class="session-value expiry" id="session-expiry-timer">00m 00s</span>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="profile-actions">
+          <form action="/login" method="get" style="width: 100%;">
+            <button class="btn btn-refresh" id="refresh-action-btn" type="submit">
+              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.2"></path>
+              </svg>
+              Refresh Session
+            </button>
+          </form>
+          
+          <form action="/logout" method="get" style="width: 100%;">
+            <button class="btn btn-logout" id="logout-action-btn" type="submit">
+              <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              Terminate Session
+            </button>
+          </form>
+
+          <a href="/" class="btn btn-home" id="home-action-btn">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Go Home
+          </a>
+        </div>
+      </aside>
+
+      <!-- Right Column: Interactive Console Tabs -->
+      <main class="console-container">
+        
+        <!-- Tab Switches -->
+        <nav class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab('claims-tab')" id="tab-claims-trigger">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Claims Explorer
+          </button>
+          <button class="tab-btn" onclick="switchTab('jwt-tab')" id="tab-jwt-trigger">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            JWT Inspector
+          </button>
+          <button class="tab-btn" onclick="switchTab('raw-tab')" id="tab-raw-trigger">
+            <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Raw ID Token
+          </button>
+        </nav>
+
+        <!-- Tab 1 Panel: Claims -->
+        <div class="glass-card tab-panel active" id="claims-tab">
+          <div class="panel-header-actions">
+            <div class="search-wrapper">
+              <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+              <input type="text" class="search-input" id="claims-search-input" placeholder="Search claims (e.g. name, email, roles)..." oninput="filterClaims()" />
+            </div>
+            <button class="action-badge-btn" onclick="copyText('claims-json-pre')" id="copy-claims-btn">
+              <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+              </svg>
+              Copy JSON
+            </button>
+          </div>
+          <pre class="code-container" id="claims-json-pre"></pre>
+        </div>
+
+        <div class="glass-card tab-panel" id="jwt-tab">
+          <!-- JWT Decoded Details -->
+          <div class="jwt-parsed-container">
+            <!-- Header -->
+            <div class="jwt-part-box jwt-header-border">
+              <div class="jwt-part-title jwt-panel-header">Header: Algorithm & Key ID</div>
+              <pre class="jwt-parsed-box" id="jwt-header-json"></pre>
+            </div>
+
+            <!-- Payload -->
+            <div class="jwt-part-box jwt-payload-border">
+              <div class="jwt-part-title jwt-panel-payload">Payload: Claims</div>
+              <pre class="jwt-parsed-box" id="jwt-payload-json"></pre>
+            </div>
+
+            <!-- Signature status -->
+            <div class="jwt-part-box jwt-signature-border">
+              <div class="jwt-part-title jwt-panel-signature">Signature Status</div>
+              <div style="font-family: var(--mono-font); font-size: 0.8rem; color: var(--accent-emerald); display: flex; align-items: center; gap: 6px; margin-top: 4px;" id="signature-msg">
+                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                Signature Verified by Provider
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3 Panel: Raw Token Content -->
+        <div class="glass-card tab-panel" id="raw-tab">
+          <div class="panel-header-actions">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Decrypted JSON Web Token string directly from the identity response:</span>
+            <button class="action-badge-btn" onclick="copyText('raw-token-content')" id="copy-raw-btn">
+              <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+              </svg>
+              Copy Raw Token
+            </button>
+          </div>
+          <div class="raw-token-box" id="raw-token-content"></div>
+        </div>
+
+        <!-- System Diagnostic Details Grid -->
+        <section class="diagnostic-panel" id="diagnostic-section">
+          <div class="diagnostic-grid">
+            <div class="diagnostic-card">
+              <div class="diag-title">Issuer (iss)</div>
+              <div class="diag-val" id="diag-issuer">--</div>
+            </div>
+            
+            <div class="diagnostic-card">
+              <div class="diag-title">Audience (aud)</div>
+              <div class="diag-val" id="diag-audience">--</div>
+            </div>
+
+            <div class="diagnostic-card">
+              <div class="diag-title">Subject Ident (sub)</div>
+              <div class="diag-val" id="diag-sub">--</div>
+            </div>
+
+            <div class="diagnostic-card">
+              <div class="diag-title">Session Key</div>
+              <div class="diag-val" id="diag-auth-time">--</div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div class="toast" id="clipboard-toast">
+    <svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+    </svg>
+    Copied to clipboard!
+  </div>
+
+  <!-- Injecting dynamic details in HTML safe blocks -->
+  <script type="text/javascript">
+    // Server inputs injected securely via Go templates
+    const rawClaims = {{.PrettyClaims}}; // Already JSON formatted string
+    const decodedJWTObj = {{.DecodedJWT}}; // Already JSON formatted string containing header and payload
+    const rawTokenStr = "{{.RawIDToken}}"; // String literal
+
+    // Run when DOM fully loaded
+    document.addEventListener("DOMContentLoaded", () => {
+      initDashboard();
+    });
+
+    function initDashboard() {
+      // 1. Render Claims with beautiful interactive Syntax Highlighting
+      const claimsContainer = document.getElementById("claims-json-pre");
+      claimsContainer.innerHTML = syntaxHighlight(rawClaims);
+
+      // 2. Parse Profile Card attributes dynamically
+      const claims = JSON.parse(rawClaims);
+      
+      // Name resolver
+      const fullName = claims.name || claims.preferred_username || claims.given_name || claims.unique_name || claims.sub || "OIDC User";
+      document.getElementById("user-fullname").innerText = fullName;
+      
+      // Initials for avatar fallback
+      const initials = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById("avatar-initials").innerText = initials || "U";
+
+      // Picture resolver
+      const avatarImg = document.getElementById("avatar-image");
+      const avatarInit = document.getElementById("avatar-initials");
+      if (claims.picture) {
+        avatarImg.src = claims.picture;
+        avatarImg.style.display = "block";
+        avatarInit.style.display = "none";
+      }
+
+      // Email resolver
+      const email = claims.email || claims.upn || "no-email@claims.provided";
+      document.getElementById("user-email").innerText = email;
+
+      // 3. Set Raw Token Content tab content
+      document.getElementById("raw-token-content").innerText = rawTokenStr;
+
+      // 4. Set diagnostic summary parameters
+      document.getElementById("diag-issuer").innerText = claims.iss || "N/A";
+      document.getElementById("diag-audience").innerText = Array.isArray(claims.aud) ? claims.aud.join(", ") : (claims.aud || "N/A");
+      document.getElementById("diag-sub").innerText = claims.sub || "N/A";
+      
+      // Format authorization time or unique identifier
+      const authTime = claims.auth_time || claims.iat || Math.floor(Date.now() / 1000);
+      document.getElementById("diag-auth-time").innerText = "iat: " + authTime;
+
+      // 5. Setup Token Expiration countdown timer
+      setupExpiryTimer(claims.exp);
+
+      // 6. Set JWT tab highlights
+      setupJWTHighlights();
+    }
+
+    // Switch Tabs helper
+    function switchTab(tabId) {
+      // Active states trigger toggle
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.remove("active");
+      });
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.remove("active");
+      });
+
+      document.getElementById(tabId).classList.add("active");
+      
+      // Find corresponding button using switch target
+      if (tabId === "claims-tab") document.getElementById("tab-claims-trigger").classList.add("active");
+      if (tabId === "jwt-tab") document.getElementById("tab-jwt-trigger").classList.add("active");
+      if (tabId === "raw-tab") document.getElementById("tab-raw-trigger").classList.add("active");
+    }
+
+    // Expiry Timer countdown handler
+    function setupExpiryTimer(expTimestamp) {
+      const timerElement = document.getElementById("session-expiry-timer");
+      if (!expTimestamp) {
+        timerElement.innerText = "No expiry (永)";
+        timerElement.style.color = "var(--accent-emerald)";
+        timerElement.style.background = "rgba(16, 185, 129, 0.1)";
+        timerElement.style.borderColor = "rgba(16, 185, 129, 0.2)";
+        return;
+      }
+
+      function updateTimer() {
+        const nowSec = Math.floor(Date.now() / 1000);
+        const remaining = expTimestamp - nowSec;
+
+        if (remaining <= 0) {
+          timerElement.innerText = "Expired ⚠️";
+          timerElement.style.color = "var(--accent-magenta)";
+          timerElement.style.background = "rgba(244, 63, 94, 0.15)";
+          timerElement.style.borderColor = "rgba(244, 63, 94, 0.25)";
+          return;
+        }
+
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        
+        // Add double digits padding
+        const minStr = mins < 10 ? "0" + mins : mins;
+        const secStr = secs < 10 ? "0" + secs : secs;
+        
+        timerElement.innerText = `${minStr}m ${secStr}s`;
+
+        // Change badge warning state if under 2 minutes
+        if (remaining < 120) {
+          timerElement.style.color = "var(--accent-magenta)";
+          timerElement.style.background = "rgba(244, 63, 94, 0.15)";
+          timerElement.style.borderColor = "rgba(244, 63, 94, 0.25)";
+        } else if (remaining < 300) {
+          timerElement.style.color = "var(--accent-amber)";
+          timerElement.style.background = "rgba(245, 158, 11, 0.15)";
+          timerElement.style.borderColor = "rgba(245, 158, 11, 0.2)";
+        } else {
+          timerElement.style.color = "var(--accent-emerald)";
+          timerElement.style.background = "rgba(16, 185, 129, 0.15)";
+          timerElement.style.borderColor = "rgba(16, 185, 129, 0.25)";
+        }
+      }
+
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    }
+
+    // JWT.io-style Breakdown Highlighter
+    function setupJWTHighlights() {
+      // Fill in JSON structures parsed from Go's DecodedJWT format
+      const fullJWT = JSON.parse(decodedJWTObj);
+      
+      document.getElementById("jwt-header-json").innerHTML = syntaxHighlight(JSON.stringify(fullJWT.header, null, 2));
+      document.getElementById("jwt-payload-json").innerHTML = syntaxHighlight(JSON.stringify(fullJWT.payload, null, 2));
+    }
+
+    // JSON syntax highlighting engine
+    function syntaxHighlight(jsonStr) {
+      if (typeof jsonStr !== 'string') {
+        jsonStr = JSON.stringify(jsonStr, undefined, 2);
+      }
+      
+      // Escape HTML entities to prevent execution
+      jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      
+      return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    // Interactive claim list live search/filtering
+    function filterClaims() {
+      const query = document.getElementById("claims-search-input").value.toLowerCase();
+      const container = document.getElementById("claims-json-pre");
+      
+      if (!query) {
+        // Reset original code block format
+        container.innerHTML = syntaxHighlight(rawClaims);
+        return;
+      }
+
+      // Convert claims object into lines and filter it, highlighting lines
+      const parsedClaims = JSON.parse(rawClaims);
+      const lines = JSON.stringify(parsedClaims, null, 2).split('\n');
+      
+      const filteredLines = lines.map(line => {
+        if (line.toLowerCase().includes(query)) {
+          // Highlight match parts
+          const escapedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          
+          // Apply standard syntax styling inside first, then highlight the wrapper
+          const styledLine = highlightMatch(escapedLine, query);
+          return `<div class="json-highlight">${styledLine}</div>`;
+        }
+        return `<div>${syntaxHighlightLine(line)}</div>`;
+      });
+
+      container.innerHTML = filteredLines.join('');
+    }
+
+    // Apply search query highlighting to line
+    function highlightMatch(lineStr, query) {
+      // Find start & end of key if present
+      const index = lineStr.toLowerCase().indexOf(query);
+      if (index >= 0) {
+        const originalMatch = lineStr.substring(index, index + query.length);
+        const highlighted = lineStr.replace(originalMatch, `<mark style="background-color: var(--accent-cyan); color: #000; border-radius:2px; font-weight:700;">${originalMatch}</mark>`);
+        return highlighted;
+      }
+      return lineStr;
+    }
+
+    // Minimal single line highlighter
+    function syntaxHighlightLine(line) {
+      return line.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+        let cls = 'json-number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'json-key';
+          } else {
+            cls = 'json-string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'json-boolean';
+        } else if (/null/.test(match)) {
+          cls = 'json-null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    // Copy to Clipboard Utility
+    function copyText(elementId) {
+      const copyTextContent = document.getElementById(elementId).innerText;
+      
+      navigator.clipboard.writeText(copyTextContent).then(() => {
+        // Show success Toast
+        const toast = document.getElementById("clipboard-toast");
+        toast.classList.add("show");
+        
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 2200);
+      }).catch(err => {
+        console.error('Failed to copy to clipboard: ', err);
+      });
+    }
+  </script>
+</body>
+</html>

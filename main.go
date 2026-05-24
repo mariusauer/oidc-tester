@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/tls"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -24,20 +26,30 @@ type Config struct {
 	Scopes       []string `json:"scopes"`
 }
 
+//go:embed templates/*
+var templatesFS embed.FS
+
 var (
 	cfg          Config
 	provider     *oidc.Provider
 	verifier     *oidc.IDTokenVerifier
 	oauthConfig  *oauth2.Config
 	currentState string
+	tmpl         *template.Template
 )
 
 func main() {
 	loadConfig()
 
+	// Parse templates
+	var err error
+	tmpl, err = template.ParseFS(templatesFS, "templates/*.html")
+	if err != nil {
+		log.Fatalf("failed to parse templates: %v", err)
+	}
+
 	ctx := insecureContext(context.Background())
 
-	var err error
 	provider, err = oidc.NewProvider(ctx, cfg.IssuerURL)
 	if err != nil {
 		log.Fatalf("failed to discover provider: %v", err)
@@ -89,7 +101,10 @@ func loadConfig() {
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<h2>OIDC Test App</h2><a href="/login">Login with OIDC</a>`))
+	if err := tmpl.ExecuteTemplate(w, "home.html", cfg); err != nil {
+		log.Printf("failed to execute home template: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -146,19 +161,20 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	decoded := decodeJWT(rawIDToken)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(fmt.Sprintf(`
-<h2>Login successful</h2>
-<form action="/logout" method="get">
-  <button type="submit">Logout</button>
-</form>
-<form action="/login" method="get">
-  <button type="submit">Refresh</button>
-</form>
-<h3>Claims</h3>
-<pre>%s</pre>
-<h3>Decoded JWT</h3>
-<pre>%s</pre>
-`, pretty, decoded)))
+	data := struct {
+		PrettyClaims string
+		DecodedJWT   string
+		RawIDToken   string
+	}{
+		PrettyClaims: string(pretty),
+		DecodedJWT:   decoded,
+		RawIDToken:   rawIDToken,
+	}
+
+	if err := tmpl.ExecuteTemplate(w, "callback.html", data); err != nil {
+		log.Printf("failed to execute callback template: %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {

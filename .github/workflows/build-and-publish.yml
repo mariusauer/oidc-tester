@@ -91,11 +91,12 @@ jobs:
           if-no-files-found: error
 
   approve:
-    name: Approve Dependabot PR
+    name: Approve and merge Dependabot PR
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: write
       pull-requests: write
 
     steps:
@@ -104,6 +105,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr review --approve "$PR_URL"
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --merge "$PR_URL"
 
   publish:
     name: Publish Release

@@ -2,9 +2,12 @@ APP_NAME := oidc-tester
 DIST_DIR := dist
 LDFLAGS := -s -w
 
-.PHONY: build linux windows clean
+.PHONY: build test linux windows clean
 
 build: linux windows
+
+test:
+	go test ./...
 
 linux:
 	mkdir -p $(DIST_DIR)

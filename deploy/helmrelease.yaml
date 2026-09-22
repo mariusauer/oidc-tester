@@ -40,6 +40,8 @@ spec:
   values:
     controllers:
       main:
+        annotations:
+          reloader.stakater.com/auto: "true"
         # Login state is held in-process, so overlapping replicas would make
         # callbacks fail intermittently with "invalid state".
         replicas: 1
@@ -61,17 +63,17 @@ spec:
               liveness:
                 enabled: true
                 type: HTTP
-                path: /
+                path: /health
                 port: http
               readiness:
                 enabled: true
                 type: HTTP
-                path: /
+                path: /health
                 port: http
               startup:
                 enabled: true
                 type: HTTP
-                path: /
+                path: /health
                 port: http
                 spec:
                   failureThreshold: 30

@@ -72,6 +72,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", homeHandler)
+	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/callback", callbackHandler)
 	http.HandleFunc("/logout", logoutHandler)
@@ -105,6 +106,12 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to execute home template: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
+}
+
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok\n"))
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {

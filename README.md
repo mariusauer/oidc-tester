@@ -48,6 +48,8 @@ go run .
 
 Then open `http://localhost:3000` unless you changed `listen_addr`.
 
+`GET /health` returns `200 OK` with the plain-text body `ok` for startup, readiness, and liveness checks.
+
 ## Build
 
 Build both Linux and Windows x64 binaries:

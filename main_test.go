@@ -78,6 +78,21 @@ func TestHomeHandler(t *testing.T) {
 	}
 }
 
+func TestHealthHandler(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	healthHandler(recorder, httptest.NewRequest(http.MethodGet, "/health", nil))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if got := recorder.Header().Get("Content-Type"); got != "text/plain; charset=utf-8" {
+		t.Fatalf("Content-Type = %q, want plain text", got)
+	}
+	if got := recorder.Body.String(); got != "ok\n" {
+		t.Fatalf("body = %q, want %q", got, "ok\n")
+	}
+}
+
 func TestLoginHandler(t *testing.T) {
 	oauthConfig = &oauth2.Config{
 		ClientID:    "test-client",

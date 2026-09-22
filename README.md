@@ -50,6 +50,23 @@ Then open `http://localhost:3000` unless you changed `listen_addr`.
 
 `GET /health` returns `200 OK` with the plain-text body `ok` for startup, readiness, and liveness checks.
 
+## Deploy with Flux
+
+The `deploy/` directory contains a Kustomize example that installs the
+HelmRepository and HelmRelease and generates the `oidc-tester-config` Secret
+from `deploy/config.json`.
+
+Update the example configuration, image, ingress host, and TLS secret for your
+environment, then apply it:
+
+```bash
+kubectl apply -k deploy
+```
+
+The cluster must already have Flux's source and Helm controllers and Stakater
+Reloader installed. Do not commit real client secrets; use your cluster's
+secret-management workflow instead.
+
 ## Build
 
 Build both Linux and Windows x64 binaries:

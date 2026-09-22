@@ -1,0 +1,12 @@
+{
+  "issuer_url": "https://idp.example.com/realms/example",
+  "client_id": "oidc-tester",
+  "client_secret": "replace-me",
+  "redirect_url": "https://oidc-tester.example.com/callback",
+  "listen_addr": ":3000",
+  "scopes": [
+    "openid",
+    "profile",
+    "email"
+  ]
+}

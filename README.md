@@ -53,8 +53,9 @@ Then open `http://localhost:3000` unless you changed `listen_addr`.
 ## Deploy with Flux
 
 The `deploy/` directory contains a Kustomize example that installs the
-HelmRepository and HelmRelease and generates the `oidc-tester-config` Secret
-from `deploy/config.json`.
+HelmRepository and HelmRelease in `flux-system`. The Helm release targets the
+`oidc-tester` namespace, where Kustomize also generates the
+`oidc-tester-config` Secret from `deploy/config.json`.
 
 Update the example configuration, image, ingress host, and TLS secret for your
 environment, then apply it:

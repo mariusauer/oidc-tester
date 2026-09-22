@@ -1,6 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: oidc-tester
 
 resources:
   - namespace.yaml
@@ -9,6 +8,7 @@ resources:
 
 secretGenerator:
   - name: oidc-tester-config
+    namespace: oidc-tester
     files:
       - config.json
 

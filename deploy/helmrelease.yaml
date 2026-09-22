@@ -2,9 +2,10 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: oidc-tester
-  namespace: oidc-tester
+  namespace: flux-system
 spec:
   interval: 30m
+  targetNamespace: oidc-tester
   chart:
     spec:
       chart: app-template
@@ -36,7 +37,7 @@ spec:
               # Publish this image/tag first or replace the repository; this
               # source repository currently publishes binaries, not images.
               repository: ghcr.io/mariusauer/oidc-tester
-              tag: v1.1.1
+              tag: v1.1.2
               pullPolicy: IfNotPresent
             workingDir: /
             ports:

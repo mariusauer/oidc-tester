@@ -90,6 +90,7 @@ The workflow at `.github/workflows/build-and-publish.yml`:
 
 - builds Linux x64 and Windows x64 binaries on pull requests, pushes to `main`, and manual runs
 - publishes release assets when a tag matching `v*` is pushed
+- publishes Linux AMD64/ARM64 images to GHCR with the Git tag and `latest`
 
 Example release tag:
 

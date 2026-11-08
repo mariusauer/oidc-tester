@@ -50,6 +50,55 @@ Then open `http://localhost:3000` unless you changed `listen_addr`.
 
 `GET /health` returns `200 OK` with the plain-text body `ok` for startup, readiness, and liveness checks.
 
+## Try locally with Docker Compose and Dex
+
+With Docker and the Compose plugin installed, run from the repository root:
+
+```bash
+docker compose up --build -d
+```
+
+The example uses Dex v2.46.1. Open <http://localhost:3000>, start the login flow,
+and sign in with:
+
+- Email: `admin@example.com`
+- Password: `password`
+
+The admin user's `staticPasswords` entry assigns the groups `admins` and
+`oidc-testers`. The example app requests the `groups` scope, so the ID token
+includes `"groups": ["admins", "oidc-testers"]`. Edit the user's `groups` list
+in `examples/dex/config.yaml` to try other memberships.
+
+After login, Dex skips the approval screen and the app displays the verified ID
+token claims. This is configured with `oauth2.skipApprovalScreen: true` in
+`examples/dex/config.yaml`.
+Dex's discovery document is available at
+<http://localhost:5556/dex/.well-known/openid-configuration>.
+
+The example mounts `examples/dex/oidc-tester.json` as the app's configuration
+and `examples/dex/config.yaml` as Dex's configuration. Your root `config.json`
+is not used by Compose. The client ID, secret, and callback URL must match in
+both example files if you change them.
+
+The app shares Dex's container network namespace so `http://localhost:5556/dex`
+works as the issuer URL for both the browser and the app's token requests.
+Both ports are published on the host's loopback interface, and the app starts
+after Dex's discovery endpoint passes its health check. Use `localhost` in the
+browser, as the registered callback uses that hostname.
+
+View logs or stop the example with:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+This setup is for local testing: it uses HTTP, public example credentials, and
+Dex's in-memory storage. Restarting Dex discards its state; start a fresh login
+afterward. The static user is recreated from the configuration at startup.
+Dex's [example configuration](https://github.com/dexidp/dex/blob/v2.46.1/config.yaml.dist)
+documents the static client and password settings used here.
+
 ## Deploy with Flux
 
 The `deploy/` directory contains a Kustomize example that installs the

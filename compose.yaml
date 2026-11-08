@@ -1,0 +1,27 @@
+services:
+  dex:
+    image: ghcr.io/dexidp/dex:v2.46.1
+    command: ["dex", "serve", "/etc/dex/config.yaml"]
+    ports:
+      - "127.0.0.1:5556:5556"
+      # The app shares this service's network namespace.
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./examples/dex/config.yaml:/etc/dex/config.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:5556/dex/.well-known/openid-configuration"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+
+  oidc-tester:
+    build: .
+    # Keep the issuer reachable at the same URL from the browser and the app.
+    network_mode: service:dex
+    depends_on:
+      dex:
+        condition: service_healthy
+    working_dir: /
+    volumes:
+      - ./examples/dex/oidc-tester.json:/config.json:ro

@@ -1,0 +1,8 @@
+{
+  "issuer_url": "http://localhost:5556/dex",
+  "client_id": "oidc-tester",
+  "client_secret": "oidc-tester-dev-secret",
+  "redirect_url": "http://localhost:3000/callback",
+  "listen_addr": ":3000",
+  "scopes": ["openid", "profile", "email", "groups"]
+}
